@@ -1,6 +1,6 @@
 /*
   Developed by GnobarEl for tecnovlogger (c) 2020
-  v 0.1
+  v 0.14 alpha
   References
   Debounce code: https://www.instructables.com/id/Arduino-Software-debouncing-in-interrupt-function/
 */
@@ -26,7 +26,7 @@ float PF = 1.0;
 int mainVoltage = 226;
 int Hz = 50;
 int totalWatts = 0;
-int cycleCount = 0;
+float cycleCount = 0;
 float hours = 0;
 float consumedkWh = 0;
 float electricityPrice = 0.17; // €0.17 kWh
