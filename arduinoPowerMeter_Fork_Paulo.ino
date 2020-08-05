@@ -1,9 +1,9 @@
 /*
   Developed by GnobarEl for tecnovlogger (c) 2020
-  v 0.6 RC
+  v 0.7 RC
 */
 
-#include "EmonLib.h" //INCLUSÃO DE BIBLIOTECA
+#include "EmonLib.h" //Sensor ACS712
 #include <EEPROM.h>
 #include <SoftwareSerial.h>
 #include <PZEM004Tv30.h>
@@ -14,29 +14,29 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
 
 PZEM004Tv30 pzem(2,3);   /// Software Serial pin 10 (RX) & 11 (TX) for arduino uno
 
-#define     CURRENT_CAL       15.30   //Valor de cabibração (Deve ser ajustado com um multimetro)
-#define     LINE_FREQUENCY    50      //Frequencia
+#define     CURRENT_CAL       15.30     //Valor de cabibração (Deve ser ajustado com um multimetro)
+#define     LINE_FREQUENCY    50        //Frequencia
 //#define     VOLTAGE_AC        240     //240v
-#define     ruido             0.05    // Ruido causado pelo sensor de intensidade
-#define     PF                1.0     //Power Factor 1.0
-#define     measurementSample 500    // Intervalo de leitura do sendor. By default: #500 ms
+#define     ruido             0.05      // Ruido causado pelo sensor de intensidade
+#define     PF                1.0       //Power Factor 1.0
+#define     measurementSample 500       // Intervalo de leitura do sendor. By default: #500 ms
 #define     numberOfCycles    10     
 
 #define EEADDR 166 // Start location to write EEPROM data.
 
 const int   pinoSensor    = A2;
-const float electicityPrice = 0.16;          // custo do kWh
+const float electicityPrice = 0.16;      // custo do kWh
       int   cycleCount    = 0;
       float power;
       float voltage;
       float current;
       float currentDraw;
-      float totalkWh;
+      float totalkWh = 0;
       float kWh;
       float hours;
       float cost;
-      int   eeAddress = 0;            //Location we want the data to be put.
-                                      // initial Time display is 00:00:00
+      int   eeAddress = 0;              //Location we want the data to be put.
+                                        // initial Time display is 00:00:00
       int h=00;
       int m=00;
       int s=00;
@@ -76,10 +76,10 @@ void setup(){
      
       //read values from EEPROM
       Serial.print("Read float from EEPROM: ");
-      //Get the float data from the EEPROM at position 'eeAddress'
-      EEPROM.get(eeAddress, totalkWh);
-  
-      Serial.println(totalkWh,5);    //This may print 'ovf, nan' if the data inside the EEPROM is not a valid float.
+      EEPROM.get(eeAddress, totalkWh);          //Get the float data from the EEPROM at position 'eeAddress'
+
+      Serial.print("eeprom totalkWh: ");
+      Serial.println(totalkWh,5);               //This may print 'ovf, nan' if the data inside the EEPROM is not a valid float.
 
       lcd.begin(20,4);
       createCustomCharacters();
@@ -96,7 +96,14 @@ void loop(){
       voltage = pzem.voltage(); // Volts
       current = pzem.current(); // Amps
       power = pzem.power(); // Watts
-      
+
+      //Debug
+      Serial.print("voltage: ");
+      Serial.println(voltage);
+      Serial.print("current: ");
+      Serial.println(current);
+      Serial.print("power: ");
+      Serial.println(power);
 
       //emon1.calcVI(numberOfCycles,measurementSample); //FUNÇÃO DE CÁLCULO (20 SEMICICLOS / TEMPO LIMITE PARA FAZER A MEDIÇÃO)
       //currentDraw = emon1.Irms; //VARIÁVEL RECEBE O VALOR DE CORRENTE RMS OBTIDO
@@ -114,9 +121,9 @@ void loop(){
     if (cycleCount % 60 == 0) {
         Serial.print("Save kWh: ");
         Serial.println(totalkWh,5);
-        EEPROM.put(eeAddress, totalkWh);          // Save the kWh
+        EEPROM.put(eeAddress, totalkWh);                // Save the kWh
   
-        int EEAddr = EEADDR;                      // Save the time
+        int EEAddr = EEADDR;                            // Save the time
         EEPROM.put(EEAddr,h); EEAddr +=sizeof(2);
         EEPROM.put(EEAddr,m); EEAddr +=sizeof(2);
         EEPROM.put(EEAddr,s); EEAddr +=sizeof(2);
@@ -208,15 +215,26 @@ void calculateThePower(){
       //convert Amps to Watts
       //P(W) = PF × I(A) × V(V)
       power = PF * current * voltage; //Watts in real time
-    
+
+
       //Convert Seconds to Hours
       //The time is hard coded. We are taking a measurement every second.
       hours = (float)1 / 3600;
     
-      kWh = (power * hours) / 1000;
+      kWh = (power * hours) / 1000;      
       totalkWh = totalkWh + kWh;
-      
       cost = electicityPrice * totalkWh;
+      
+      Serial.print("Power: ");
+      Serial.println(power);      
+      Serial.print("hours: ");
+      Serial.println(hours);
+      Serial.print("kWh: ");
+      Serial.println(kWh);
+      Serial.print("totalkWh: ");
+      Serial.println(totalkWh);
+      Serial.print("cost: ");
+      Serial.println(cost);
 }
 
 void writeEnergyToDisplay(){
